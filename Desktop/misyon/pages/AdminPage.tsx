@@ -407,9 +407,9 @@ const AdminPage: React.FC<AdminPageProps> = ({
       case 'subjects':
         return (
           <div className="space-y-4">
-            <div className="flex justify-between items-center">
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Dersleri ve Konuları Yönet</h3>
-                <button onClick={handleAddSubject} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded transition-colors">Yeni Ders Ekle</button>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Dersleri ve Konuları Yönet</h3>
+                <button onClick={handleAddSubject} className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded transition-colors text-sm">Yeni Ders Ekle</button>
             </div>
             {subjects.map(subject => {
               const isOpen = openSubjectId === subject.id;
@@ -417,39 +417,39 @@ const AdminPage: React.FC<AdminPageProps> = ({
                 <div key={subject.id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                   <button 
                     onClick={() => setOpenSubjectId(isOpen ? null : subject.id)}
-                    className="w-full flex justify-between items-center p-4 text-left focus:outline-none"
+                    className="w-full flex justify-between items-center p-3 sm:p-4 text-left focus:outline-none"
                     aria-expanded={isOpen}
                     aria-controls={`subject-panel-${subject.id}`}
                   >
-                    <h4 className="text-xl font-bold text-gray-900 dark:text-white">{subject.name}</h4>
-                    <ChevronDownIcon className={`w-6 h-6 text-gray-500 dark:text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+                    <h4 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white pr-2">{subject.name}</h4>
+                    <ChevronDownIcon className={`w-5 h-5 sm:w-6 sm:h-6 text-gray-500 dark:text-gray-400 transition-transform duration-300 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
                   </button>
                   
                   {isOpen && (
-                    <div id={`subject-panel-${subject.id}`} className="px-4 pb-4 border-t border-gray-200 dark:border-gray-700">
+                    <div id={`subject-panel-${subject.id}`} className="px-3 sm:px-4 pb-3 sm:pb-4 border-t border-gray-200 dark:border-gray-700">
                       <div className="mt-4 space-y-4">
-                        <h5 className="text-md font-semibold text-gray-600 dark:text-gray-300">Ders Bilgileri</h5>
-                        <div className="flex flex-col md:flex-row md:items-center gap-4">
-                          <input type="text" value={subject.name} onChange={e => handleUpdateSubject(subject.id, 'name', e.target.value)} className={`${inputClasses} md:w-1/3`} />
-                          <input type="text" value={subject.description} onChange={e => handleUpdateSubject(subject.id, 'description', e.target.value)} className={`${inputClasses} md:w-2/3`} />
-                          <button onClick={() => handleDeleteSubject(subject.id)} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors">Dersi Sil</button>
+                        <h5 className="text-sm sm:text-md font-semibold text-gray-600 dark:text-gray-300">Ders Bilgileri</h5>
+                        <div className="space-y-3 sm:space-y-0 sm:flex sm:flex-row sm:items-center sm:gap-4">
+                          <input type="text" value={subject.name} onChange={e => handleUpdateSubject(subject.id, 'name', e.target.value)} className={`${inputClasses} text-sm sm:text-base sm:w-1/3`} placeholder="Ders Adı" />
+                          <input type="text" value={subject.description} onChange={e => handleUpdateSubject(subject.id, 'description', e.target.value)} className={`${inputClasses} text-sm sm:text-base sm:w-2/3`} placeholder="Ders Açıklaması" />
+                          <button onClick={() => handleDeleteSubject(subject.id)} className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors text-sm">Dersi Sil</button>
                         </div>
                       </div>
-
+ 
                       <div className="mt-4 pt-4 border-t border-gray-300 dark:border-gray-600">
-                          <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Konular</h4>
+                          <h4 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2">Konular</h4>
                           <div className="space-y-3">
                               {subject.topics.map(topic => (
                                   <div key={topic.id} className="bg-gray-100 dark:bg-gray-900/50 p-3 rounded-md space-y-2 border border-gray-200 dark:border-gray-700">
-                                      <input type="text" value={topic.title} onChange={e => handleUpdateTopic(subject.id, topic.id, 'title', e.target.value)} className={inputClasses} placeholder="Konu Başlığı" />
-                                      <textarea value={topic.content} onChange={e => handleUpdateTopic(subject.id, topic.id, 'content', e.target.value)} className={textareaClasses} rows={3} placeholder="Konu Özeti"></textarea>
+                                      <input type="text" value={topic.title} onChange={e => handleUpdateTopic(subject.id, topic.id, 'title', e.target.value)} className={`${inputClasses} text-sm`} placeholder="Konu Başlığı" />
+                                      <textarea value={topic.content} onChange={e => handleUpdateTopic(subject.id, topic.id, 'content', e.target.value)} className={`${textareaClasses} text-sm`} rows={3} placeholder="Konu Özeti"></textarea>
                                       <div className="text-right">
                                           <button onClick={() => handleDeleteTopic(subject.id, topic.id)} className="bg-red-700/50 hover:bg-red-700 text-white text-xs font-bold py-1 px-2 rounded transition-colors">Konuyu Sil</button>
                                       </div>
                                   </div>
                               ))}
                           </div>
-                          <button onClick={() => handleAddTopic(subject.id)} className="mt-3 bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-3 rounded transition-colors text-sm">Yeni Konu Ekle</button>
+                          <button onClick={() => handleAddTopic(subject.id)} className="mt-3 w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 rounded transition-colors text-sm">Yeni Konu Ekle</button>
                       </div>
                     </div>
                   )}
@@ -465,7 +465,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
         
         return (
           <div className="space-y-4">
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Testleri ve Soruları Yönet</h3>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Testleri ve Soruları Yönet</h3>
             
             <div className="flex flex-col md:flex-row gap-4">
               <select value={selectedSubjectIdForQuestions} onChange={e => { setSelectedSubjectIdForQuestions(e.target.value); }} className={inputClasses}>
@@ -495,28 +495,28 @@ const AdminPage: React.FC<AdminPageProps> = ({
             </div>
 
             {selectedTest && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-                <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{selectedTest.name}</h4>
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
+                <h4 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-4">{selectedTest.name}</h4>
                 <div className="space-y-4">
                   {selectedTest.questions.map((question, qIndex) => (
-                    <div key={question.id} className="bg-gray-100 dark:bg-gray-900/50 p-4 rounded-md border border-gray-200 dark:border-gray-700">
+                    <div key={question.id} className="bg-gray-100 dark:bg-gray-900/50 p-3 sm:p-4 rounded-md border border-gray-200 dark:border-gray-700">
                       <div className="flex justify-between items-start mb-2">
-                        <h5 className="font-semibold text-gray-900 dark:text-white">Soru {qIndex + 1}</h5>
+                        <h5 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">Soru {qIndex + 1}</h5>
                         <button onClick={() => handleDeleteQuestion(question.id)} className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1 px-2 rounded transition-colors">Sil</button>
                       </div>
-                      <textarea value={question.question} onChange={e => handleUpdateQuestion(question.id, 'question', e.target.value)} className={textareaClasses} rows={3} placeholder="Soru metni"></textarea>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                      <textarea value={question.question} onChange={e => handleUpdateQuestion(question.id, 'question', e.target.value)} className={`${textareaClasses} text-sm`} rows={3} placeholder="Soru metni"></textarea>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
                         {question.options.map((option, oIndex) => (
-                          <input key={oIndex} type="text" value={option} onChange={e => handleUpdateQuestion(question.id, 'option', e.target.value, oIndex)} className={inputClasses} placeholder={`Seçenek ${String.fromCharCode(65 + oIndex)}`} />
+                          <input key={oIndex} type="text" value={option} onChange={e => handleUpdateQuestion(question.id, 'option', e.target.value, oIndex)} className={`${inputClasses} text-sm`} placeholder={`Seçenek ${String.fromCharCode(65 + oIndex)}`} />
                         ))}
                       </div>
-                      <div className="flex flex-col md:flex-row gap-2 mt-2">
-                        <select value={question.answer} onChange={e => handleUpdateQuestion(question.id, 'answer', e.target.value)} className={inputClasses}>
+                      <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                        <select value={question.answer} onChange={e => handleUpdateQuestion(question.id, 'answer', e.target.value)} className={`${inputClasses} text-sm sm:w-1/4`}>
                           {question.options.map((_, oIndex) => (
                             <option key={oIndex} value={String.fromCharCode(65 + oIndex)}>{String.fromCharCode(65 + oIndex)}</option>
                           ))}
                         </select>
-                        <textarea value={question.explanation} onChange={e => handleUpdateQuestion(question.id, 'explanation', e.target.value)} className={textareaClasses} rows={2} placeholder="Açıklama (isteğe bağlı)"></textarea>
+                        <textarea value={question.explanation} onChange={e => handleUpdateQuestion(question.id, 'explanation', e.target.value)} className={`${textareaClasses} text-sm sm:flex-1`} rows={2} placeholder="Açıklama (isteğe bağlı)"></textarea>
                       </div>
                     </div>
                   ))}
@@ -529,97 +529,74 @@ const AdminPage: React.FC<AdminPageProps> = ({
       case 'exams':
         return (
             <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Denemeleri ve Soruları Yönet</h3>
-                    <button onClick={handleAddExam} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded transition-colors">Yeni Deneme Ekle</button>
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Sınavları Yönet</h3>
+                
+                <div className="flex flex-col gap-3 sm:gap-4">
+                    <input type="text" value={newExamName} onChange={e => setNewExamName(e.target.value)} className={`${inputClasses} text-sm sm:text-base`} placeholder="Sınav adı" />
+                    <textarea value={newExamDescription} onChange={e => setNewExamDescription(e.target.value)} className={`${textareaClasses} text-sm sm:text-base`} rows={3} placeholder="Sınav açıklaması"></textarea>
+                    <input type="number" value={newExamDuration} onChange={e => setNewExamDuration(Number(e.target.value))} className={`${inputClasses} text-sm sm:text-base`} placeholder="Süre (dakika)" />
+                    <input type="number" value={newExamQuestionCount} onChange={e => setNewExamQuestionCount(Number(e.target.value))} className={`${inputClasses} text-sm sm:text-base`} placeholder="Soru sayısı" />
+                    
+                    <div className="flex flex-col sm:flex-row gap-2">
+                        <button onClick={handleAddExam} className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors text-sm">Sınav Ekle</button>
+                    </div>
                 </div>
-                {exams.map(exam => {
-                    const isOpen = openExamId === exam.id;
-                    return (
-                        <div key={exam.id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                            <button 
-                                onClick={() => setOpenExamId(isOpen ? null : exam.id)}
-                                className="w-full flex justify-between items-center p-4 text-left focus:outline-none"
-                            >
-                                <div>
-                                    <h4 className="text-xl font-bold text-gray-900 dark:text-white">{exam.name}</h4>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">{exam.questions.length} Soru</p>
-                                </div>
-                                <ChevronDownIcon className={`w-6 h-6 text-gray-500 dark:text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
-                            </button>
-                            {isOpen && (
-                                <div className="px-4 pb-4 border-t border-gray-200 dark:border-gray-700">
-                                    <div className="mt-4 space-y-4">
-                                        <h5 className="text-md font-semibold text-gray-600 dark:text-gray-300">Deneme Bilgileri</h5>
-                                        <div className="flex flex-col md:flex-row md:items-center gap-4">
-                                            <input type="text" value={exam.name} onChange={e => handleUpdateExam(exam.id, 'name', e.target.value)} className={`${inputClasses} md:w-1/2`} placeholder="Deneme Adı" />
-                                            <input type="number" value={exam.duration} onChange={e => handleUpdateExam(exam.id, 'duration', parseInt(e.target.value))} className={`${inputClasses} md:w-1/4`} placeholder="Süre (dakika)" />
-                                            <button onClick={() => handleDeleteExam(exam.id)} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors">Denemeyi Sil</button>
-                                        </div>
-                                        <button onClick={() => handleAddQuestionToExam(exam.id)} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors">Soru Ekle</button>
-                                    </div>
-
-                                    <div className="mt-4 pt-4 border-t border-gray-300 dark:border-gray-600">
-                                        <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Sorular</h4>
-                                        <div className="space-y-3">
-                                            {exam.questions.map((question, qIndex) => (
-                                                <div key={question.id} className="bg-gray-100 dark:bg-gray-900/50 p-3 rounded-md space-y-2 border border-gray-200 dark:border-gray-700">
-                                                    <div className="flex justify-between items-start">
-                                                        <h6 className="font-semibold text-gray-900 dark:text-white">Soru {qIndex + 1}</h6>
-                                                        <button onClick={() => handleDeleteQuestionFromExam(exam.id, question.id)} className="bg-red-700/50 hover:bg-red-700 text-white text-xs font-bold py-1 px-2 rounded transition-colors">Sil</button>
-                                                    </div>
-                                                    <textarea value={question.question} onChange={e => handleUpdateQuestionInExam(exam.id, question.id, 'question', e.target.value)} className={textareaClasses} rows={3} placeholder="Soru metni"></textarea>
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                                        {question.options.map((option, oIndex) => (
-                                                            <input key={oIndex} type="text" value={option} onChange={e => handleUpdateQuestionInExam(exam.id, question.id, 'option', e.target.value, oIndex)} className={inputClasses} placeholder={`Seçenek ${String.fromCharCode(65 + oIndex)}`} />
-                                                        ))}
-                                                    </div>
-                                                    <div className="flex flex-col md:flex-row gap-2">
-                                                        <select value={question.answer} onChange={e => handleUpdateQuestionInExam(exam.id, question.id, 'answer', e.target.value)} className={inputClasses}>
-                                                            {question.options.map((_, oIndex) => (
-                                                                <option key={oIndex} value={String.fromCharCode(65 + oIndex)}>{String.fromCharCode(65 + oIndex)}</option>
-                                                            ))}
-                                                        </select>
-                                                        <textarea value={question.explanation} onChange={e => handleUpdateQuestionInExam(exam.id, question.id, 'explanation', e.target.value)} className={textareaClasses} rows={2} placeholder="Açıklama (isteğe bağlı)"></textarea>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
+            
+                <div className="space-y-3">
+                    {exams.map(exam => (
+                        <div key={exam.id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
+                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-4">
+                                <div className="flex-1">
+                                    <h4 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">{exam.name}</h4>
+                                    <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base mt-1">{exam.description}</p>
+                                    <div className="flex flex-wrap gap-2 sm:gap-4 mt-2 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                                        <span>Süre: {exam.duration} dk</span>
+                                        <span>Soru: {exam.questionCount}</span>
+                                        <span>Oluşturulma: {new Date(exam.createdAt).toLocaleDateString('tr-TR')}</span>
                                     </div>
                                 </div>
-                            )}
+                                <button onClick={() => handleDeleteExam(exam.id)} className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded transition-colors text-sm">Sil</button>
+                            </div>
                         </div>
-                    )
-                })}
+                    ))}
+                </div>
             </div>
         );
 
       case 'flashcards':
-        const flashcardsForSelectedSubject = flashcardsBySubject[selectedSubjectIdForFlashcards] || [];
-        
         return (
           <div className="space-y-4">
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Bilgi Kartlarını Yönet</h3>
+            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Flash Kartları Yönet</h3>
             
-            <div className="flex flex-col md:flex-row gap-4">
-              <select value={selectedSubjectIdForFlashcards} onChange={e => setSelectedSubjectIdForFlashcards(e.target.value)} className={inputClasses}>
+            <div className="flex flex-col gap-3 sm:gap-4">
+              <select value={selectedSubjectIdForFlashcards} onChange={e => setSelectedSubjectIdForFlashcards(e.target.value)} className={`${inputClasses} text-sm sm:text-base`}>
+                <option value="">Ders Seçin</option>
                 {subjects.map(subject => (
                   <option key={subject.id} value={subject.id}>{subject.name}</option>
                 ))}
               </select>
-              <button onClick={handleAddFlashcard} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors" disabled={!selectedSubjectIdForFlashcards}>Bu Derse Kart Ekle</button>
+              
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button onClick={handleAddFlashcard} className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors text-sm" disabled={!selectedSubjectIdForFlashcards}>Flash Kart Ekle</button>
+              </div>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {flashcardsForSelectedSubject.map(card => (
-                <div key={card.id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h5 className="font-semibold text-gray-900 dark:text-white">Bilgi Kartı</h5>
-                    <button onClick={() => handleDeleteFlashcard(card.id)} className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1 px-2 rounded transition-colors">Sil</button>
+          
+            <div className="space-y-3">
+              {flashcards.filter(fc => fc.subjectId === selectedSubjectIdForFlashcards).map(flashcard => (
+                <div key={flashcard.id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
+                  <div className="flex justify-between items-start mb-3">
+                    <h4 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Flash Kart</h4>
+                    <button onClick={() => handleDeleteFlashcard(flashcard.id)} className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1 px-2 rounded transition-colors">Sil</button>
                   </div>
-                  <div className="space-y-2">
-                    <textarea value={card.front} onChange={e => handleUpdateFlashcard(card.id, 'front', e.target.value)} className={textareaClasses} rows={3} placeholder="Kartın ön yüzü"></textarea>
-                    <textarea value={card.back} onChange={e => handleUpdateFlashcard(card.id, 'back', e.target.value)} className={textareaClasses} rows={3} placeholder="Kartın arka yüzü"></textarea>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ön Yüz</label>
+                      <textarea value={flashcard.front} onChange={e => handleUpdateFlashcard(flashcard.id, 'front', e.target.value)} className={`${textareaClasses} text-sm`} rows={2} placeholder="Ön yüz metni"></textarea>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Arka Yüz</label>
+                      <textarea value={flashcard.back} onChange={e => handleUpdateFlashcard(flashcard.id, 'back', e.target.value)} className={`${textareaClasses} text-sm`} rows={2} placeholder="Arka yüz metni"></textarea>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -629,100 +606,33 @@ const AdminPage: React.FC<AdminPageProps> = ({
 
       case 'announcements':
         return (
-          <div className="space-y-6">
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Duyuruları Yönet</h3>
+          <div className="space-y-4">
+            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Duyuruları Yönet</h3>
             
-            {/* Yeni Duyuru Ekleme Formu */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-              <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Yeni Duyuru Ekle</h4>
-              <div className="space-y-4">
-                <input
-                  type="text"
-                  placeholder="Duyuru Başlığı"
-                  value={newAnnouncement.title}
-                  onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}
-                  className={inputClasses}
-                />
-                <textarea
-                  placeholder="Duyuru İçeriği"
-                  value={newAnnouncement.content}
-                  onChange={(e) => setNewAnnouncement({ ...newAnnouncement, content: e.target.value })}
-                  className={textareaClasses}
-                  rows={4}
-                />
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="is_active"
-                    checked={newAnnouncement.is_active}
-                    onChange={(e) => setNewAnnouncement({ ...newAnnouncement, is_active: e.target.checked })}
-                    className="rounded border-gray-300 dark:border-gray-600"
-                  />
-                  <label htmlFor="is_active" className="text-sm text-gray-700 dark:text-gray-300">
-                    Aktif (Anasayfada göster)
-                  </label>
-                </div>
-                <button
-                  onClick={handleCreateAnnouncement}
-                  className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors"
-                >
-                  Duyuru Ekle
-                </button>
+            <div className="flex flex-col gap-3 sm:gap-4">
+              <input type="text" value={newAnnouncementTitle} onChange={e => setNewAnnouncementTitle(e.target.value)} className={`${inputClasses} text-sm sm:text-base`} placeholder="Duyuru başlığı" />
+              <textarea value={newAnnouncementContent} onChange={e => setNewAnnouncementContent(e.target.value)} className={`${textareaClasses} text-sm sm:text-base`} rows={4} placeholder="Duyuru içeriği"></textarea>
+              
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button onClick={handleAddAnnouncement} className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors text-sm">Duyuru Ekle</button>
               </div>
             </div>
 
-            {/* Mevcut Duyurular */}
-            <div className="space-y-4">
-              <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Mevcut Duyurular</h4>
-              {announcements.length === 0 ? (
-                <p className="text-gray-500 dark:text-gray-400">Henüz duyuru bulunmuyor.</p>
-              ) : (
-                announcements.map((announcement) => (
-                  <div key={announcement.id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          checked={announcement.is_active}
-                          onChange={(e) => handleUpdateAnnouncement(announcement.id, 'is_active', e.target.checked)}
-                          className="rounded border-gray-300 dark:border-gray-600"
-                        />
-                        <span className={`text-sm font-medium ${announcement.is_active ? 'text-green-600' : 'text-red-600'}`}>
-                          {announcement.is_active ? 'Aktif' : 'Pasif'}
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => handleDeleteAnnouncement(announcement.id)}
-                        className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1 px-2 rounded transition-colors"
-                      >
-                        Sil
-                      </button>
+            <div className="space-y-3">
+              {announcements.map(announcement => (
+                <div key={announcement.id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-4">
+                    <div className="flex-1">
+                      <input type="text" value={announcement.title} onChange={e => handleUpdateAnnouncement(announcement.id, 'title', e.target.value)} className={`${inputClasses} text-sm sm:text-base font-semibold`} />
+                      <textarea value={announcement.content} onChange={e => handleUpdateAnnouncement(announcement.id, 'content', e.target.value)} className={`${textareaClasses} text-sm sm:text-base mt-2`} rows={3}></textarea>
+                      <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-2">
+                        Oluşturulma: {new Date(announcement.createdAt).toLocaleDateString('tr-TR')}
+                      </p>
                     </div>
-                    <div className="space-y-3">
-                      <input
-                        type="text"
-                        value={announcement.title}
-                        onChange={(e) => handleUpdateAnnouncement(announcement.id, 'title', e.target.value)}
-                        className={inputClasses}
-                        placeholder="Duyuru Başlığı"
-                      />
-                      <textarea
-                        value={announcement.content}
-                        onChange={(e) => handleUpdateAnnouncement(announcement.id, 'content', e.target.value)}
-                        className={textareaClasses}
-                        rows={3}
-                        placeholder="Duyuru İçeriği"
-                      />
-                    </div>
-                    <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                      Oluşturulma: {new Date(announcement.created_at).toLocaleString('tr-TR')}
-                      {announcement.updated_at && announcement.updated_at !== announcement.created_at && (
-                        <span> • Güncelleme: {new Date(announcement.updated_at).toLocaleString('tr-TR')}</span>
-                      )}
-                    </div>
+                    <button onClick={() => handleDeleteAnnouncement(announcement.id)} className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded transition-colors text-sm">Sil</button>
                   </div>
-                ))
-              )}
+                </div>
+              ))}
             </div>
           </div>
         );
@@ -740,39 +650,43 @@ const AdminPage: React.FC<AdminPageProps> = ({
         onBack={navigateBack}
       />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
         {/* Save Changes Button */}
-        <div className="mb-6 flex justify-between items-center">
-          <div className="flex space-x-1 bg-white dark:bg-gray-800 rounded-lg p-1 border border-gray-200 dark:border-gray-700">
-            {(['subjects', 'questions', 'exams', 'flashcards', 'announcements'] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  activeTab === tab
-                    ? 'bg-indigo-600 text-white'
-                    : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
-                }`}
-              >
-                {tab === 'subjects' && 'Dersler'}
-                {tab === 'questions' && 'Testler'}
-                {tab === 'exams' && 'Denemeler'}
-                {tab === 'flashcards' && 'Bilgi Kartları'}
-                {tab === 'announcements' && 'Duyurular'}
-              </button>
-            ))}
+        <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          {/* Mobile-optimized Tab Navigation */}
+          <div className="w-full sm:w-auto">
+            <div className="flex overflow-x-auto bg-white dark:bg-gray-800 rounded-lg p-1 border border-gray-200 dark:border-gray-700 scrollbar-hide">
+              {(['subjects', 'questions', 'exams', 'flashcards', 'announcements'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`flex-shrink-0 px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+                    activeTab === tab
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  {tab === 'subjects' && 'Dersler'}
+                  {tab === 'questions' && 'Testler'}
+                  {tab === 'exams' && 'Denemeler'}
+                  {tab === 'flashcards' && 'Bilgi Kartları'}
+                  {tab === 'announcements' && 'Duyurular'}
+                </button>
+              ))}
+            </div>
           </div>
           
-          <div className="flex items-center space-x-2">
+          {/* Mobile-optimized Save Button */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
             {showSaveSuccess && (
-              <span className="text-green-600 dark:text-green-400 text-sm font-medium">
+              <span className="text-green-600 dark:text-green-400 text-xs sm:text-sm font-medium">
                 ✓ Değişiklikler kaydedildi!
               </span>
             )}
             <button
               onClick={handleSaveChanges}
               disabled={!isDirty}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`w-full sm:w-auto px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors ${
                 isDirty
                   ? 'bg-green-600 hover:bg-green-700 text-white'
                   : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
