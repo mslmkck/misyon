@@ -24,9 +24,11 @@ const AdminPage: React.FC<AdminPageProps> = ({
     exams, setExams,
     flashcardsBySubject, setFlashcardsBySubject
 }) => {
+  // State management
   const [activeTab, setActiveTab] = useState<'subjects' | 'questions' | 'exams' | 'flashcards' | 'announcements'>('subjects');
   const [isDirty, setIsDirty] = useState(false);
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
   
   // Accordion states
   const [openSubjectId, setOpenSubjectId] = useState<string | null>(null);
@@ -90,18 +92,146 @@ const AdminPage: React.FC<AdminPageProps> = ({
     setIsDirty(true);
   };
 
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
     try {
-        localStorage.setItem('proSınav_subjects', JSON.stringify(subjects));
-        localStorage.setItem('proSınav_questions', JSON.stringify(questionsBySubject));
-        localStorage.setItem('proSınav_exams', JSON.stringify(exams));
-        localStorage.setItem('proSınav_flashcards', JSON.stringify(flashcardsBySubject));
-        setIsDirty(false);
-        setShowSaveSuccess(true);
-        setTimeout(() => setShowSaveSuccess(false), 3000);
+      setSaving(true);
+      
+      // Önce localStorage'a kaydet (hızlı UI güncellemesi için)
+      localStorage.setItem('proSınav_subjects', JSON.stringify(subjects));
+      localStorage.setItem('proSınav_questions', JSON.stringify(questionsBySubject));
+      localStorage.setItem('proSınav_exams', JSON.stringify(exams));
+      localStorage.setItem('proSınav_flashcards', JSON.stringify(flashcardsBySubject));
+      
+      // Sonra Supabase'e kaydet (cihazlar arası senkronizasyon için)
+      
+      // Subjects'leri kaydet/güncelle
+      for (const subject of subjects) {
+        try {
+          const existingSubject = await dbHelpers.getSubjectById(subject.id);
+          if (existingSubject) {
+            await dbHelpers.updateSubject(subject.id, {
+              name: subject.name,
+              description: subject.description
+            });
+          } else {
+            const newSubject = await dbHelpers.createSubject({
+              id: subject.id,
+              name: subject.name,
+              description: subject.description
+            });
+            // Update the subject with the real ID from Supabase
+            subject.id = newSubject.id;
+          }
+        } catch (error) {
+          console.error(`Subject ${subject.id} kaydedilirken hata:`, error);
+        }
+      }
+      
+      // Questions'ları kaydet/güncelle
+      for (const [subjectId, quizTests] of Object.entries(questionsBySubject)) {
+        for (const quizTest of quizTests) {
+          for (const question of quizTest.questions) {
+            try {
+              const existingQuestion = await dbHelpers.getQuestionById(question.id);
+              if (existingQuestion) {
+                await dbHelpers.updateQuestion(question.id, {
+                  question: question.question,
+                  options: question.options,
+                  correct_answer: question.correctAnswer,
+                  explanation: question.explanation,
+                  subject_id: subjectId
+                });
+              } else {
+                const newQuestion = await dbHelpers.createQuestion({
+                  id: question.id,
+                  question: question.question,
+                  options: question.options,
+                  correct_answer: question.correctAnswer,
+                  explanation: question.explanation,
+                  subject_id: subjectId
+                });
+                // Update the question with the real ID from Supabase
+                question.id = newQuestion.id;
+              }
+            } catch (error) {
+              console.error(`Question ${question.id} kaydedilirken hata:`, error);
+            }
+          }
+        }
+      }
+      
+      // Mock Exams'ları kaydet/güncelle
+      for (const exam of exams) {
+        try {
+          const existingExam = await dbHelpers.getMockExamById(exam.id);
+          if (existingExam) {
+            await dbHelpers.updateMockExam(exam.id, {
+              name: exam.name,
+              description: exam.description,
+              questions: exam.questions,
+              time_limit: exam.timeLimit
+            });
+          } else {
+            const newExam = await dbHelpers.createMockExam({
+              id: exam.id,
+              name: exam.name,
+              description: exam.description,
+              questions: exam.questions,
+              time_limit: exam.timeLimit
+            });
+            // Update the exam with the real ID from Supabase
+            exam.id = newExam.id;
+          }
+        } catch (error) {
+          console.error(`Mock Exam ${exam.id} kaydedilirken hata:`, error);
+        }
+      }
+      
+      // Flashcards'ları kaydet/güncelle
+      for (const [subjectId, flashcards] of Object.entries(flashcardsBySubject)) {
+        for (const flashcard of flashcards) {
+          try {
+            const existingFlashcard = await dbHelpers.getFlashcardById(flashcard.id);
+            if (existingFlashcard) {
+              await dbHelpers.updateFlashcard(flashcard.id, {
+                front: flashcard.front,
+                back: flashcard.back,
+                subject_id: subjectId
+              });
+            } else {
+              const newFlashcard = await dbHelpers.createFlashcard({
+                id: flashcard.id,
+                front: flashcard.front,
+                back: flashcard.back,
+                subject_id: subjectId
+              });
+              // Update the flashcard with the real ID from Supabase
+              flashcard.id = newFlashcard.id;
+            }
+          } catch (error) {
+            console.error(`Flashcard ${flashcard.id} kaydedilirken hata:`, error);
+          }
+        }
+      }
+      
+      // Update localStorage with the new IDs from Supabase
+      localStorage.setItem('proSınav_subjects', JSON.stringify(subjects));
+      localStorage.setItem('proSınav_questions', JSON.stringify(questionsBySubject));
+      localStorage.setItem('proSınav_exams', JSON.stringify(exams));
+      localStorage.setItem('proSınav_flashcards', JSON.stringify(flashcardsBySubject));
+      
+      setIsDirty(false);
+      setShowSaveSuccess(true);
+      setTimeout(() => setShowSaveSuccess(false), 3000);
+      
+      // localStorage değişikliği event'i gönder (aynı sekme içi senkronizasyon için)
+      window.dispatchEvent(new Event('localStorageChange'));
+      
     } catch (error) {
-        console.error("Değişiklikler kaydedilemedi:", error);
-        alert("Bir hata oluştu, değişiklikler kaydedilemedi.");
+      console.error("Değişiklikler kaydedilemedi:", error);
+      alert("Bir hata oluştu, değişiklikler kaydedilemedi.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -685,14 +815,14 @@ const AdminPage: React.FC<AdminPageProps> = ({
             )}
             <button
               onClick={handleSaveChanges}
-              disabled={!isDirty}
+              disabled={!isDirty || saving}
               className={`w-full sm:w-auto px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors ${
-                isDirty
+                isDirty && !saving
                   ? 'bg-green-600 hover:bg-green-700 text-white'
                   : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
               }`}
             >
-              Değişiklikleri Kaydet
+              {saving ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
             </button>
           </div>
         </div>
