@@ -312,7 +312,9 @@ const App: React.FC = () => {
         return <SettingsPage navigateBack={() => navigateTo('home')} user={user} setUser={setUser} theme={theme} setTheme={setTheme} />;
       case 'admin':
         // Admin sayfasına sadece admin kullanıcılar erişebilir
-        if (!user.isAdmin) {
+        const isAdminFromStorage = localStorage.getItem('proSınav_isAdmin') === 'true';
+        const isAdmin = user.isAdmin || isAdminFromStorage;
+        if (!isAdmin) {
           // Admin olmayan kullanıcıları home sayfasına yönlendir
           setTimeout(() => navigateTo('home'), 0);
           return <HomePage navigateTo={navigateTo} theme={theme} user={user} />;
