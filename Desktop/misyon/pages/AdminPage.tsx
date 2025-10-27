@@ -1,0 +1,793 @@
+import React, { useState, useEffect } from 'react';
+import PageHeader from '../components/PageHeader';
+import type { Subject, QuizTest, Question, MockExam, Flashcard, FlashcardsBySubject, Topic } from '../types';
+import { SUBJECTS } from '../constants'; // For icons map
+import { ChevronDownIcon } from '../components/Icons';
+import { dbHelpers } from "../src/lib/supabase";
+
+interface AdminPageProps {
+  navigateBack: () => void;
+  subjects: Subject[];
+  setSubjects: React.Dispatch<React.SetStateAction<Subject[]>>;
+  questionsBySubject: Record<string, QuizTest[]>;
+  setQuestionsBySubject: React.Dispatch<React.SetStateAction<Record<string, QuizTest[]>>>;
+  exams: MockExam[];
+  setExams: React.Dispatch<React.SetStateAction<MockExam[]>>;
+  flashcardsBySubject: FlashcardsBySubject;
+  setFlashcardsBySubject: React.Dispatch<React.SetStateAction<FlashcardsBySubject>>;
+}
+
+const AdminPage: React.FC<AdminPageProps> = ({ 
+    navigateBack, 
+    subjects, setSubjects, 
+    questionsBySubject, setQuestionsBySubject, 
+    exams, setExams,
+    flashcardsBySubject, setFlashcardsBySubject
+}) => {
+  const [activeTab, setActiveTab] = useState<'subjects' | 'questions' | 'exams' | 'flashcards' | 'announcements'>('subjects');
+  const [isDirty, setIsDirty] = useState(false);
+  const [showSaveSuccess, setShowSaveSuccess] = useState(false);
+  
+  // Accordion states
+  const [openSubjectId, setOpenSubjectId] = useState<string | null>(null);
+  const [openExamId, setOpenExamId] = useState<string | number | null>(null);
+
+  // Question Management states
+  const [selectedSubjectIdForQuestions, setSelectedSubjectIdForQuestions] = useState<string>(subjects[0]?.id || '');
+  const [selectedTestId, setSelectedTestId] = useState<string>('');
+
+  // Flashcard Management states
+  const [selectedSubjectIdForFlashcards, setSelectedSubjectIdForFlashcards] = useState<string>(subjects[0]?.id || '');
+
+  // Announcement Management states
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [newAnnouncement, setNewAnnouncement] = useState({ title: '', content: '', is_active: true });
+
+  useEffect(() => {
+    if (activeTab === 'questions' && subjects.length > 0 && !selectedSubjectIdForQuestions) {
+        setSelectedSubjectIdForQuestions(subjects[0].id);
+    }
+  }, [activeTab, subjects, selectedSubjectIdForQuestions]);
+
+  useEffect(() => {
+    if (subjects.length > 0 && !subjects.find(s => s.id === selectedSubjectIdForQuestions)) {
+      setSelectedSubjectIdForQuestions(subjects[0].id);
+    }
+  }, [subjects, selectedSubjectIdForQuestions]);
+  
+  // Load announcements when tab changes to announcements
+  useEffect(() => {
+    if (activeTab === 'announcements') {
+      loadAnnouncements();
+    }
+  }, [activeTab]);
+  
+  useEffect(() => {
+    const testsForSubject = questionsBySubject[selectedSubjectIdForQuestions] || [];
+    if (testsForSubject.length > 0) {
+      if (!testsForSubject.find(t => t.id === selectedTestId)) {
+        setSelectedTestId(testsForSubject[0].id);
+      }
+    } else {
+      setSelectedTestId('');
+    }
+  }, [selectedSubjectIdForQuestions, questionsBySubject, selectedTestId]);
+
+  const handleSetSubjects = (value: React.SetStateAction<Subject[]>) => {
+    setSubjects(value);
+    setIsDirty(true);
+  };
+  const handleSetQuestionsBySubject = (value: React.SetStateAction<Record<string, QuizTest[]>>) => {
+    setQuestionsBySubject(value);
+    setIsDirty(true);
+  };
+  const handleSetExams = (value: React.SetStateAction<MockExam[]>) => {
+    setExams(value);
+    setIsDirty(true);
+  };
+  const handleSetFlashcardsBySubject = (value: React.SetStateAction<FlashcardsBySubject>) => {
+    setFlashcardsBySubject(value);
+    setIsDirty(true);
+  };
+
+  const handleSaveChanges = () => {
+    try {
+        localStorage.setItem('proSınav_subjects', JSON.stringify(subjects));
+        localStorage.setItem('proSınav_questions', JSON.stringify(questionsBySubject));
+        localStorage.setItem('proSınav_exams', JSON.stringify(exams));
+        localStorage.setItem('proSınav_flashcards', JSON.stringify(flashcardsBySubject));
+        setIsDirty(false);
+        setShowSaveSuccess(true);
+        setTimeout(() => setShowSaveSuccess(false), 3000);
+    } catch (error) {
+        console.error("Değişiklikler kaydedilemedi:", error);
+        alert("Bir hata oluştu, değişiklikler kaydedilemedi.");
+    }
+  };
+
+  // Announcement Management
+  const loadAnnouncements = async () => {
+    try {
+      const data = await dbHelpers.getAllAnnouncements();
+      setAnnouncements(data || []);
+    } catch (error) {
+      console.error('Duyurular yüklenirken hata:', error);
+    }
+  };
+
+  const handleCreateAnnouncement = async () => {
+    if (!newAnnouncement.title.trim() || !newAnnouncement.content.trim()) {
+      alert('Başlık ve içerik alanları boş olamaz!');
+      return;
+    }
+    
+    try {
+      await dbHelpers.createAnnouncement({
+        title: newAnnouncement.title,
+        content: newAnnouncement.content,
+        is_active: newAnnouncement.is_active
+      });
+      setNewAnnouncement({ title: '', content: '', is_active: true });
+      loadAnnouncements();
+    } catch (error) {
+      console.error('Duyuru oluşturulurken hata:', error);
+      alert('Duyuru oluşturulamadı!');
+    }
+  };
+
+  const handleUpdateAnnouncement = async (id: string, field: 'title' | 'content' | 'is_active', value: string | boolean) => {
+    try {
+      const announcement = announcements.find(a => a.id === id);
+      if (announcement) {
+        const updatedData = { ...announcement, [field]: value };
+        await dbHelpers.updateAnnouncement(id, {
+          title: updatedData.title,
+          content: updatedData.content,
+          is_active: updatedData.is_active
+        });
+        loadAnnouncements();
+      }
+    } catch (error) {
+      console.error('Duyuru güncellenirken hata:', error);
+      alert('Duyuru güncellenemedi!');
+    }
+  };
+
+  const handleDeleteAnnouncement = async (id: string) => {
+    if (window.confirm('Bu duyuruyu silmek istediğinizden emin misiniz?')) {
+      try {
+        await dbHelpers.deleteAnnouncement(id);
+        loadAnnouncements();
+      } catch (error) {
+        console.error('Duyuru silinirken hata:', error);
+        alert('Duyuru silinemedi!');
+      }
+    }
+  };
+
+  // Subject & Topic Management
+  const handleAddSubject = () => {
+    const newSubject: Subject = {
+      id: `new-subject-${Date.now()}`,
+      name: 'Yeni Ders Adı',
+      description: 'Yeni ders açıklaması.',
+      icon: SUBJECTS[0].icon, // Default icon
+      topics: [],
+    };
+    handleSetSubjects([...subjects, newSubject]);
+  };
+  const handleUpdateSubject = (id: string, field: 'name' | 'description', value: string) => {
+    handleSetSubjects(subjects.map(s => s.id === id ? { ...s, [field]: value } : s));
+  };
+  const handleDeleteSubject = (id: string) => {
+    if (window.confirm('Bu dersi silmek istediğinizden emin misiniz? Derse ait tüm konular, testler, sorular ve bilgi kartları da silinecektir.')) {
+        handleSetSubjects(subjects.filter(s => s.id !== id));
+        const newQuestionsBySubject = { ...questionsBySubject };
+        delete newQuestionsBySubject[id];
+        handleSetQuestionsBySubject(newQuestionsBySubject);
+        const newFlashcardsBySubject = { ...flashcardsBySubject };
+        delete newFlashcardsBySubject[id];
+        handleSetFlashcardsBySubject(newFlashcardsBySubject);
+    }
+  };
+
+  const handleAddTopic = (subjectId: string) => {
+    const newTopic: Topic = {
+        id: crypto.randomUUID(),
+        title: 'Yeni Konu Başlığı',
+        content: 'Konu özeti buraya gelecek...',
+    };
+    const updatedSubjects = subjects.map(s => {
+        if (s.id === subjectId) {
+            return { ...s, topics: [...s.topics, newTopic] };
+        }
+        return s;
+    });
+    handleSetSubjects(updatedSubjects);
+  };
+  
+  const handleUpdateTopic = (subjectId: string, topicId: string, field: 'title' | 'content', value: string) => {
+    const updatedSubjects = subjects.map(s => {
+        if (s.id === subjectId) {
+            const updatedTopics = s.topics.map(t => t.id === topicId ? { ...t, [field]: value } : t);
+            return { ...s, topics: updatedTopics };
+        }
+        return s;
+    });
+    handleSetSubjects(updatedSubjects);
+  };
+
+  const handleDeleteTopic = (subjectId: string, topicId: string) => {
+    if (window.confirm('Bu konuyu silmek istediğinizden emin misiniz?')) {
+        const updatedSubjects = subjects.map(s => {
+            if (s.id === subjectId) {
+                const updatedTopics = s.topics.filter(t => t.id !== topicId);
+                return { ...s, topics: updatedTopics };
+            }
+            return s;
+        });
+        handleSetSubjects(updatedSubjects);
+    }
+  };
+
+  // Question Management
+  const handleAddTest = () => {
+    if (!selectedSubjectIdForQuestions) return;
+    const newTest: QuizTest = {
+        id: `${selectedSubjectIdForQuestions}-test-${Date.now()}`,
+        name: `Yeni Test ${ (questionsBySubject[selectedSubjectIdForQuestions]?.length || 0) + 1}`,
+        questions: [],
+    };
+    const subjectTests = questionsBySubject[selectedSubjectIdForQuestions] || [];
+    handleSetQuestionsBySubject({
+        ...questionsBySubject,
+        [selectedSubjectIdForQuestions]: [...subjectTests, newTest]
+    });
+  };
+
+  const handleDeleteTest = (testId: string) => {
+    if(!selectedSubjectIdForQuestions || !window.confirm('Bu testi ve içindeki tüm soruları silmek istediğinizden emin misiniz?')) return;
+    const subjectTests = questionsBySubject[selectedSubjectIdForQuestions].filter(t => t.id !== testId);
+    handleSetQuestionsBySubject({
+        ...questionsBySubject,
+        [selectedSubjectIdForQuestions]: subjectTests,
+    });
+  };
+
+  const handleAddQuestion = () => {
+    if(!selectedSubjectIdForQuestions || !selectedTestId) return;
+    const newQuestion: Question = {
+        id: crypto.randomUUID(),
+        question: 'Yeni soru metni...',
+        options: ['A', 'B', 'C', 'D'],
+        answer: 'A',
+        explanation: '',
+    };
+    const updatedQuestions = {...questionsBySubject};
+    const test = updatedQuestions[selectedSubjectIdForQuestions].find(t => t.id === selectedTestId);
+    if(test) {
+        test.questions.push(newQuestion);
+        handleSetQuestionsBySubject(updatedQuestions);
+    }
+  };
+
+  const handleUpdateQuestion = (questionId: string, field: 'question' | 'answer' | 'option' | 'explanation', value: string, optionIndex?: number) => {
+    if(!selectedSubjectIdForQuestions || !selectedTestId) return;
+
+    const updatedQuestions = JSON.parse(JSON.stringify(questionsBySubject));
+    const test = updatedQuestions[selectedSubjectIdForQuestions].find((t: QuizTest) => t.id === selectedTestId);
+    const question = test?.questions.find((q: Question) => q.id === questionId);
+
+    if (question) {
+        if(field === 'option' && optionIndex !== undefined) {
+            question.options[optionIndex] = value;
+        } else if (field !== 'option') {
+            question[field] = value;
+        }
+        handleSetQuestionsBySubject(updatedQuestions);
+    }
+  };
+
+  const handleDeleteQuestion = (questionId: string) => {
+     if(!selectedSubjectIdForQuestions || !selectedTestId || !window.confirm('Bu soruyu silmek istediğinizden emin misiniz?')) return;
+     const updatedQuestions = {...questionsBySubject};
+     const test = updatedQuestions[selectedSubjectIdForQuestions].find(t => t.id === selectedTestId);
+     if(test) {
+        test.questions = test.questions.filter(q => q.id !== questionId);
+        handleSetQuestionsBySubject(updatedQuestions);
+    }
+  };
+
+  // Exam Management
+  const handleAddExam = () => {
+    const newExam: MockExam = {
+      id: `new-exam-${Date.now()}`,
+      name: "Yeni Deneme Sınavı",
+      duration: 120,
+      questions: [],
+    };
+    handleSetExams([...exams, newExam]);
+  };
+  const handleUpdateExam = (id: string | number, field: 'name' | 'duration', value: string | number) => {
+    handleSetExams(exams.map(e => e.id === id ? { ...e, [field]: value } : e));
+  };
+  const handleDeleteExam = (id: string | number) => {
+    if (window.confirm('Bu denemeyi ve içindeki tüm soruları silmek istediğinizden emin misiniz?')) {
+      handleSetExams(exams.filter(e => e.id !== id));
+    }
+  };
+  const handleAddQuestionToExam = (examId: string | number) => {
+    const newQuestion: Question = {
+        id: crypto.randomUUID(),
+        question: 'Yeni deneme sorusu metni...',
+        options: ['A', 'B', 'C', 'D'],
+        answer: 'A',
+        explanation: '',
+    };
+    const updatedExams = exams.map(exam => {
+        if (exam.id === examId) {
+            return { ...exam, questions: [...exam.questions, newQuestion] };
+        }
+        return exam;
+    });
+    handleSetExams(updatedExams);
+  };
+  const handleUpdateQuestionInExam = (examId: string | number, questionId: string, field: 'question' | 'answer' | 'option' | 'explanation', value: string, optionIndex?: number) => {
+    const updatedExams = exams.map(exam => {
+        if (exam.id === examId) {
+            const updatedQuestions = exam.questions.map(q => {
+                if (q.id === questionId) {
+                     if (field === 'option' && optionIndex !== undefined) {
+                        const newOptions = [...q.options];
+                        newOptions[optionIndex] = value;
+                        return { ...q, options: newOptions };
+                    } else if (field !== 'option') {
+                        return { ...q, [field]: value };
+                    }
+                }
+                return q;
+            });
+            return { ...exam, questions: updatedQuestions };
+        }
+        return exam;
+    });
+    handleSetExams(updatedExams);
+  };
+  const handleDeleteQuestionFromExam = (examId: string | number, questionId: string) => {
+    if (!window.confirm('Bu soruyu denemeden silmek istediğinizden emin misiniz?')) return;
+    const updatedExams = exams.map(exam => {
+        if (exam.id === examId) {
+            const updatedQuestions = exam.questions.filter(q => q.id !== questionId);
+            return { ...exam, questions: updatedQuestions };
+        }
+        return exam;
+    });
+    handleSetExams(updatedExams);
+  };
+
+  // Flashcard Management
+  const handleAddFlashcard = () => {
+    if (!selectedSubjectIdForFlashcards) return;
+    const newFlashcard: Flashcard = {
+        id: crypto.randomUUID(),
+        front: 'Kartın Ön Yüzü',
+        back: 'Kartın Arka Yüzü',
+    };
+    const subjectFlashcards = flashcardsBySubject[selectedSubjectIdForFlashcards] || [];
+    handleSetFlashcardsBySubject({
+        ...flashcardsBySubject,
+        [selectedSubjectIdForFlashcards]: [...subjectFlashcards, newFlashcard]
+    });
+  };
+
+  const handleUpdateFlashcard = (cardId: string, field: 'front' | 'back', value: string) => {
+    if (!selectedSubjectIdForFlashcards) return;
+    const updatedFlashcards = {...flashcardsBySubject};
+    const card = updatedFlashcards[selectedSubjectIdForFlashcards].find(c => c.id === cardId);
+    if (card) {
+        card[field] = value;
+        handleSetFlashcardsBySubject(updatedFlashcards);
+    }
+  };
+
+  const handleDeleteFlashcard = (cardId: string) => {
+    if (!selectedSubjectIdForFlashcards || !window.confirm('Bu bilgi kartını silmek istediğinizden emin misiniz?')) return;
+    const subjectFlashcards = flashcardsBySubject[selectedSubjectIdForFlashcards].filter(c => c.id !== cardId);
+    handleSetFlashcardsBySubject({
+        ...flashcardsBySubject,
+        [selectedSubjectIdForFlashcards]: subjectFlashcards,
+    });
+  };
+
+  const renderContent = () => {
+    const inputClasses = "w-full bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white p-2 rounded border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none";
+    const textareaClasses = `${inputClasses} resize-y`;
+
+    switch (activeTab) {
+      case 'subjects':
+        return (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Dersleri ve Konuları Yönet</h3>
+                <button onClick={handleAddSubject} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded transition-colors">Yeni Ders Ekle</button>
+            </div>
+            {subjects.map(subject => {
+              const isOpen = openSubjectId === subject.id;
+              return (
+                <div key={subject.id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <button 
+                    onClick={() => setOpenSubjectId(isOpen ? null : subject.id)}
+                    className="w-full flex justify-between items-center p-4 text-left focus:outline-none"
+                    aria-expanded={isOpen}
+                    aria-controls={`subject-panel-${subject.id}`}
+                  >
+                    <h4 className="text-xl font-bold text-gray-900 dark:text-white">{subject.name}</h4>
+                    <ChevronDownIcon className={`w-6 h-6 text-gray-500 dark:text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {isOpen && (
+                    <div id={`subject-panel-${subject.id}`} className="px-4 pb-4 border-t border-gray-200 dark:border-gray-700">
+                      <div className="mt-4 space-y-4">
+                        <h5 className="text-md font-semibold text-gray-600 dark:text-gray-300">Ders Bilgileri</h5>
+                        <div className="flex flex-col md:flex-row md:items-center gap-4">
+                          <input type="text" value={subject.name} onChange={e => handleUpdateSubject(subject.id, 'name', e.target.value)} className={`${inputClasses} md:w-1/3`} />
+                          <input type="text" value={subject.description} onChange={e => handleUpdateSubject(subject.id, 'description', e.target.value)} className={`${inputClasses} md:w-2/3`} />
+                          <button onClick={() => handleDeleteSubject(subject.id)} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors">Dersi Sil</button>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 pt-4 border-t border-gray-300 dark:border-gray-600">
+                          <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Konular</h4>
+                          <div className="space-y-3">
+                              {subject.topics.map(topic => (
+                                  <div key={topic.id} className="bg-gray-100 dark:bg-gray-900/50 p-3 rounded-md space-y-2 border border-gray-200 dark:border-gray-700">
+                                      <input type="text" value={topic.title} onChange={e => handleUpdateTopic(subject.id, topic.id, 'title', e.target.value)} className={inputClasses} placeholder="Konu Başlığı" />
+                                      <textarea value={topic.content} onChange={e => handleUpdateTopic(subject.id, topic.id, 'content', e.target.value)} className={textareaClasses} rows={3} placeholder="Konu Özeti"></textarea>
+                                      <div className="text-right">
+                                          <button onClick={() => handleDeleteTopic(subject.id, topic.id)} className="bg-red-700/50 hover:bg-red-700 text-white text-xs font-bold py-1 px-2 rounded transition-colors">Konuyu Sil</button>
+                                      </div>
+                                  </div>
+                              ))}
+                          </div>
+                          <button onClick={() => handleAddTopic(subject.id)} className="mt-3 bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-3 rounded transition-colors text-sm">Yeni Konu Ekle</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        );
+
+      case 'questions':
+        const testsForSelectedSubject = questionsBySubject[selectedSubjectIdForQuestions] || [];
+        const selectedTest = testsForSelectedSubject.find(t => t.id === selectedTestId);
+        
+        return (
+          <div className="space-y-4">
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Testleri ve Soruları Yönet</h3>
+            
+            <div className="flex flex-col md:flex-row gap-4">
+              <select value={selectedSubjectIdForQuestions} onChange={e => { setSelectedSubjectIdForQuestions(e.target.value); }} className={inputClasses}>
+                {subjects.map(subject => (
+                  <option key={subject.id} value={subject.id}>{subject.name}</option>
+                ))}
+              </select>
+              
+              {testsForSelectedSubject.length > 0 && (
+                <select value={selectedTestId} onChange={e => setSelectedTestId(e.target.value)} className={inputClasses}>
+                  <option value="">Test Seçin</option>
+                  {testsForSelectedSubject.map(test => (
+                    <option key={test.id} value={test.id}>{test.name} ({test.questions.length} soru)</option>
+                  ))}
+                </select>
+              )}
+            </div>
+            
+            <div className="flex gap-2">
+              <button onClick={handleAddTest} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors" disabled={!selectedSubjectIdForQuestions}>Bu Derse Test Ekle</button>
+              {selectedTestId && (
+                <>
+                  <button onClick={() => handleDeleteTest(selectedTestId)} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors">Testi Sil</button>
+                  <button onClick={handleAddQuestion} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors">Soru Ekle</button>
+                </>
+              )}
+            </div>
+
+            {selectedTest && (
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{selectedTest.name}</h4>
+                <div className="space-y-4">
+                  {selectedTest.questions.map((question, qIndex) => (
+                    <div key={question.id} className="bg-gray-100 dark:bg-gray-900/50 p-4 rounded-md border border-gray-200 dark:border-gray-700">
+                      <div className="flex justify-between items-start mb-2">
+                        <h5 className="font-semibold text-gray-900 dark:text-white">Soru {qIndex + 1}</h5>
+                        <button onClick={() => handleDeleteQuestion(question.id)} className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1 px-2 rounded transition-colors">Sil</button>
+                      </div>
+                      <textarea value={question.question} onChange={e => handleUpdateQuestion(question.id, 'question', e.target.value)} className={textareaClasses} rows={3} placeholder="Soru metni"></textarea>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                        {question.options.map((option, oIndex) => (
+                          <input key={oIndex} type="text" value={option} onChange={e => handleUpdateQuestion(question.id, 'option', e.target.value, oIndex)} className={inputClasses} placeholder={`Seçenek ${String.fromCharCode(65 + oIndex)}`} />
+                        ))}
+                      </div>
+                      <div className="flex flex-col md:flex-row gap-2 mt-2">
+                        <select value={question.answer} onChange={e => handleUpdateQuestion(question.id, 'answer', e.target.value)} className={inputClasses}>
+                          {question.options.map((_, oIndex) => (
+                            <option key={oIndex} value={String.fromCharCode(65 + oIndex)}>{String.fromCharCode(65 + oIndex)}</option>
+                          ))}
+                        </select>
+                        <textarea value={question.explanation} onChange={e => handleUpdateQuestion(question.id, 'explanation', e.target.value)} className={textareaClasses} rows={2} placeholder="Açıklama (isteğe bağlı)"></textarea>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'exams':
+        return (
+            <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Denemeleri ve Soruları Yönet</h3>
+                    <button onClick={handleAddExam} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded transition-colors">Yeni Deneme Ekle</button>
+                </div>
+                {exams.map(exam => {
+                    const isOpen = openExamId === exam.id;
+                    return (
+                        <div key={exam.id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <button 
+                                onClick={() => setOpenExamId(isOpen ? null : exam.id)}
+                                className="w-full flex justify-between items-center p-4 text-left focus:outline-none"
+                            >
+                                <div>
+                                    <h4 className="text-xl font-bold text-gray-900 dark:text-white">{exam.name}</h4>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">{exam.questions.length} Soru</p>
+                                </div>
+                                <ChevronDownIcon className={`w-6 h-6 text-gray-500 dark:text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+                            </button>
+                            {isOpen && (
+                                <div className="px-4 pb-4 border-t border-gray-200 dark:border-gray-700">
+                                    <div className="mt-4 space-y-4">
+                                        <h5 className="text-md font-semibold text-gray-600 dark:text-gray-300">Deneme Bilgileri</h5>
+                                        <div className="flex flex-col md:flex-row md:items-center gap-4">
+                                            <input type="text" value={exam.name} onChange={e => handleUpdateExam(exam.id, 'name', e.target.value)} className={`${inputClasses} md:w-1/2`} placeholder="Deneme Adı" />
+                                            <input type="number" value={exam.duration} onChange={e => handleUpdateExam(exam.id, 'duration', parseInt(e.target.value))} className={`${inputClasses} md:w-1/4`} placeholder="Süre (dakika)" />
+                                            <button onClick={() => handleDeleteExam(exam.id)} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors">Denemeyi Sil</button>
+                                        </div>
+                                        <button onClick={() => handleAddQuestionToExam(exam.id)} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors">Soru Ekle</button>
+                                    </div>
+
+                                    <div className="mt-4 pt-4 border-t border-gray-300 dark:border-gray-600">
+                                        <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Sorular</h4>
+                                        <div className="space-y-3">
+                                            {exam.questions.map((question, qIndex) => (
+                                                <div key={question.id} className="bg-gray-100 dark:bg-gray-900/50 p-3 rounded-md space-y-2 border border-gray-200 dark:border-gray-700">
+                                                    <div className="flex justify-between items-start">
+                                                        <h6 className="font-semibold text-gray-900 dark:text-white">Soru {qIndex + 1}</h6>
+                                                        <button onClick={() => handleDeleteQuestionFromExam(exam.id, question.id)} className="bg-red-700/50 hover:bg-red-700 text-white text-xs font-bold py-1 px-2 rounded transition-colors">Sil</button>
+                                                    </div>
+                                                    <textarea value={question.question} onChange={e => handleUpdateQuestionInExam(exam.id, question.id, 'question', e.target.value)} className={textareaClasses} rows={3} placeholder="Soru metni"></textarea>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                        {question.options.map((option, oIndex) => (
+                                                            <input key={oIndex} type="text" value={option} onChange={e => handleUpdateQuestionInExam(exam.id, question.id, 'option', e.target.value, oIndex)} className={inputClasses} placeholder={`Seçenek ${String.fromCharCode(65 + oIndex)}`} />
+                                                        ))}
+                                                    </div>
+                                                    <div className="flex flex-col md:flex-row gap-2">
+                                                        <select value={question.answer} onChange={e => handleUpdateQuestionInExam(exam.id, question.id, 'answer', e.target.value)} className={inputClasses}>
+                                                            {question.options.map((_, oIndex) => (
+                                                                <option key={oIndex} value={String.fromCharCode(65 + oIndex)}>{String.fromCharCode(65 + oIndex)}</option>
+                                                            ))}
+                                                        </select>
+                                                        <textarea value={question.explanation} onChange={e => handleUpdateQuestionInExam(exam.id, question.id, 'explanation', e.target.value)} className={textareaClasses} rows={2} placeholder="Açıklama (isteğe bağlı)"></textarea>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )
+                })}
+            </div>
+        );
+
+      case 'flashcards':
+        const flashcardsForSelectedSubject = flashcardsBySubject[selectedSubjectIdForFlashcards] || [];
+        
+        return (
+          <div className="space-y-4">
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Bilgi Kartlarını Yönet</h3>
+            
+            <div className="flex flex-col md:flex-row gap-4">
+              <select value={selectedSubjectIdForFlashcards} onChange={e => setSelectedSubjectIdForFlashcards(e.target.value)} className={inputClasses}>
+                {subjects.map(subject => (
+                  <option key={subject.id} value={subject.id}>{subject.name}</option>
+                ))}
+              </select>
+              <button onClick={handleAddFlashcard} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors" disabled={!selectedSubjectIdForFlashcards}>Bu Derse Kart Ekle</button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {flashcardsForSelectedSubject.map(card => (
+                <div key={card.id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <h5 className="font-semibold text-gray-900 dark:text-white">Bilgi Kartı</h5>
+                    <button onClick={() => handleDeleteFlashcard(card.id)} className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1 px-2 rounded transition-colors">Sil</button>
+                  </div>
+                  <div className="space-y-2">
+                    <textarea value={card.front} onChange={e => handleUpdateFlashcard(card.id, 'front', e.target.value)} className={textareaClasses} rows={3} placeholder="Kartın ön yüzü"></textarea>
+                    <textarea value={card.back} onChange={e => handleUpdateFlashcard(card.id, 'back', e.target.value)} className={textareaClasses} rows={3} placeholder="Kartın arka yüzü"></textarea>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+
+      case 'announcements':
+        return (
+          <div className="space-y-6">
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Duyuruları Yönet</h3>
+            
+            {/* Yeni Duyuru Ekleme Formu */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+              <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Yeni Duyuru Ekle</h4>
+              <div className="space-y-4">
+                <input
+                  type="text"
+                  placeholder="Duyuru Başlığı"
+                  value={newAnnouncement.title}
+                  onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}
+                  className={inputClasses}
+                />
+                <textarea
+                  placeholder="Duyuru İçeriği"
+                  value={newAnnouncement.content}
+                  onChange={(e) => setNewAnnouncement({ ...newAnnouncement, content: e.target.value })}
+                  className={textareaClasses}
+                  rows={4}
+                />
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="is_active"
+                    checked={newAnnouncement.is_active}
+                    onChange={(e) => setNewAnnouncement({ ...newAnnouncement, is_active: e.target.checked })}
+                    className="rounded border-gray-300 dark:border-gray-600"
+                  />
+                  <label htmlFor="is_active" className="text-sm text-gray-700 dark:text-gray-300">
+                    Aktif (Anasayfada göster)
+                  </label>
+                </div>
+                <button
+                  onClick={handleCreateAnnouncement}
+                  className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors"
+                >
+                  Duyuru Ekle
+                </button>
+              </div>
+            </div>
+
+            {/* Mevcut Duyurular */}
+            <div className="space-y-4">
+              <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Mevcut Duyurular</h4>
+              {announcements.length === 0 ? (
+                <p className="text-gray-500 dark:text-gray-400">Henüz duyuru bulunmuyor.</p>
+              ) : (
+                announcements.map((announcement) => (
+                  <div key={announcement.id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={announcement.is_active}
+                          onChange={(e) => handleUpdateAnnouncement(announcement.id, 'is_active', e.target.checked)}
+                          className="rounded border-gray-300 dark:border-gray-600"
+                        />
+                        <span className={`text-sm font-medium ${announcement.is_active ? 'text-green-600' : 'text-red-600'}`}>
+                          {announcement.is_active ? 'Aktif' : 'Pasif'}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteAnnouncement(announcement.id)}
+                        className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1 px-2 rounded transition-colors"
+                      >
+                        Sil
+                      </button>
+                    </div>
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        value={announcement.title}
+                        onChange={(e) => handleUpdateAnnouncement(announcement.id, 'title', e.target.value)}
+                        className={inputClasses}
+                        placeholder="Duyuru Başlığı"
+                      />
+                      <textarea
+                        value={announcement.content}
+                        onChange={(e) => handleUpdateAnnouncement(announcement.id, 'content', e.target.value)}
+                        className={textareaClasses}
+                        rows={3}
+                        placeholder="Duyuru İçeriği"
+                      />
+                    </div>
+                    <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                      Oluşturulma: {new Date(announcement.created_at).toLocaleString('tr-TR')}
+                      {announcement.updated_at && announcement.updated_at !== announcement.created_at && (
+                        <span> • Güncelleme: {new Date(announcement.updated_at).toLocaleString('tr-TR')}</span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <PageHeader 
+        title="Yönetici Paneli" 
+        subtitle="İçerikleri düzenleyin ve yönetin"
+        onBack={navigateBack}
+      />
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Save Changes Button */}
+        <div className="mb-6 flex justify-between items-center">
+          <div className="flex space-x-1 bg-white dark:bg-gray-800 rounded-lg p-1 border border-gray-200 dark:border-gray-700">
+            {(['subjects', 'questions', 'exams', 'flashcards', 'announcements'] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === tab
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                {tab === 'subjects' && 'Dersler'}
+                {tab === 'questions' && 'Testler'}
+                {tab === 'exams' && 'Denemeler'}
+                {tab === 'flashcards' && 'Bilgi Kartları'}
+                {tab === 'announcements' && 'Duyurular'}
+              </button>
+            ))}
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            {showSaveSuccess && (
+              <span className="text-green-600 dark:text-green-400 text-sm font-medium">
+                ✓ Değişiklikler kaydedildi!
+              </span>
+            )}
+            <button
+              onClick={handleSaveChanges}
+              disabled={!isDirty}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                isDirty
+                  ? 'bg-green-600 hover:bg-green-700 text-white'
+                  : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+              }`}
+            >
+              Değişiklikleri Kaydet
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        {renderContent()}
+      </div>
+    </div>
+  );
+};
+
+export default AdminPage;
