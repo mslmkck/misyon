@@ -6,35 +6,11 @@ import type { MockExam, Question } from '../types';
 interface ExamsPageProps {
   navigateBack: () => void;
   startQuiz: (questions: Question[], timeLimit: number | null, name: string, source: 'questions' | 'exams') => void;
+  exams?: MockExam[];
 }
 
-const ExamsPage: React.FC<ExamsPageProps> = ({ navigateBack, startQuiz }) => {
-  const [exams, setExams] = useState<MockExam[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadExams();
-  }, []);
-
-  const loadExams = () => {
-    try {
-      setLoading(true);
-      // localStorage'dan verileri çek
-      const storedExams = localStorage.getItem('proSınav_exams');
-      
-      if (storedExams) {
-        const parsedExams: MockExam[] = JSON.parse(storedExams);
-        setExams(parsedExams);
-      } else {
-        setExams([]);
-      }
-    } catch (error) {
-      console.error('Denemeler yüklenirken hata:', error);
-      setExams([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+const ExamsPage: React.FC<ExamsPageProps> = ({ navigateBack, startQuiz, exams = [] }) => {
+  const [loading, setLoading] = useState(false);
 
   if (loading) {
     return (

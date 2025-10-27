@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../src/lib/supabase';
 
 interface Announcement {
@@ -12,9 +12,15 @@ interface Announcement {
 const AnnouncementBanner: React.FC = () => {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
+    isMountedRef.current = true;
     loadAnnouncements();
+    
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
 
   const loadAnnouncements = async () => {
@@ -26,6 +32,9 @@ const AnnouncementBanner: React.FC = () => {
         .eq('is_active', true)
         .order('created_at', { ascending: false });
       
+      // Component unmount olduysa state güncellemesi yapma
+      if (!isMountedRef.current) return;
+      
       if (error) {
         console.error('Duyurular yüklenirken hata:', error);
         setAnnouncements([]);
@@ -34,9 +43,13 @@ const AnnouncementBanner: React.FC = () => {
       }
     } catch (error) {
       console.error('Duyurular yüklenirken hata:', error);
-      setAnnouncements([]);
+      if (isMountedRef.current) {
+        setAnnouncements([]);
+      }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 

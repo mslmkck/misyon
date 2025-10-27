@@ -19,7 +19,7 @@ const Header: React.FC<HeaderProps> = ({ navigateTo, currentPage, onLogout, user
   const [isAdminFromStorage, setIsAdminFromStorage] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
-  // Local storage'dan admin durumunu kontrol et
+  // Local storage'dan admin durumunu kontrol et ve user prop değişikliklerini dinle
   useEffect(() => {
     const checkAdminStatus = () => {
       const savedIsAdmin = localStorage.getItem('proSınav_isAdmin');
@@ -36,8 +36,50 @@ const Header: React.FC<HeaderProps> = ({ navigateTo, currentPage, onLogout, user
     };
   }, []);
 
+  // User prop değiştiğinde admin durumunu yeniden kontrol et
+  useEffect(() => {
+    const savedIsAdmin = localStorage.getItem('proSınav_isAdmin');
+    setIsAdminFromStorage(savedIsAdmin === 'true');
+  }, [user]);
+
   // Admin durumunu hem user prop'undan hem de local storage'dan kontrol et
-  const isAdmin = user.isAdmin || isAdminFromStorage;
+  const [isAdmin, setIsAdmin] = useState(() => {
+    const adminFromStorage = localStorage.getItem('proSınav_isAdmin') === 'true';
+    return user.isAdmin || adminFromStorage;
+  });
+
+  // User prop değiştiğinde admin durumunu güncelle
+  useEffect(() => {
+    const adminFromStorage = localStorage.getItem('proSınav_isAdmin') === 'true';
+    const newIsAdmin = user.isAdmin || adminFromStorage;
+    setIsAdmin(newIsAdmin);
+  }, [user.isAdmin]);
+
+  // localStorage değişikliklerini dinle
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'proSınav_isAdmin') {
+        const adminFromStorage = e.newValue === 'true';
+        const newIsAdmin = user.isAdmin || adminFromStorage;
+        setIsAdmin(newIsAdmin);
+      }
+    };
+
+    // Custom event listener for same-tab localStorage changes
+    const handleCustomStorageChange = () => {
+      const adminFromStorage = localStorage.getItem('proSınav_isAdmin') === 'true';
+      const newIsAdmin = user.isAdmin || adminFromStorage;
+      setIsAdmin(newIsAdmin);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('localStorageChange', handleCustomStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('localStorageChange', handleCustomStorageChange);
+    };
+  }, [user.isAdmin]);
 
   const navItems: { page: Page; label: string }[] = [
     { page: 'home', label: 'Anasayfa' },

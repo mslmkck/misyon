@@ -153,6 +153,8 @@ const App: React.FC = () => {
   // Supabase'den verileri yükle
   useEffect(() => {
     const loadData = async () => {
+      if (!isAuthenticated) return; // Sadece authenticated kullanıcılar için veri yükle
+      
       try {
         // Subjects yükle
         const subjectsData = await dbHelpers.getSubjects();
@@ -216,17 +218,8 @@ const App: React.FC = () => {
       }
     };
 
-    // Sadece authenticated kullanıcılar için veri yükle
-    if (isAuthenticated && !isLoading) {
-      loadData();
-    } else if (!isAuthenticated && !isLoading) {
-      // Authenticated olmayan kullanıcılar için fallback verileri kullan
-      setSubjects(SUBJECTS);
-      setQuestionsBySubject(QUESTIONS_BY_SUBJECT);
-      setExams(MOCK_EXAMS);
-      setFlashcardsBySubject(FLASHCARDS_BY_SUBJECT);
-    }
-  }, [isAuthenticated, isLoading]);
+    loadData();
+  }, [isAuthenticated]); // isAuthenticated değiştiğinde veriyi yeniden yükle
 
 
   const navigateTo = (page: Page) => {
@@ -301,9 +294,18 @@ const App: React.FC = () => {
       case 'lessons':
         return <LessonsPage navigateBack={() => navigateTo('home')} />;
       case 'questions':
-        return <QuestionsPage navigateBack={() => navigateTo('home')} startQuiz={startQuiz} />;
+        return <QuestionsPage 
+          navigateBack={() => navigateTo('home')} 
+          startQuiz={startQuiz} 
+          subjects={subjects}
+          questionsBySubject={questionsBySubject}
+        />;
       case 'exams':
-        return <ExamsPage navigateBack={() => navigateTo('home')} startQuiz={startQuiz} />;
+        return <ExamsPage 
+          navigateBack={() => navigateTo('home')} 
+          startQuiz={startQuiz} 
+          exams={exams}
+        />;
       case 'flashcards':
         return <FlashcardsPage navigateBack={() => navigateTo('home')} />;
       case 'stats':

@@ -5,61 +5,26 @@ import type { Subject, QuizTest, Question } from '../types';
 interface QuestionsPageProps {
   navigateBack: () => void;
   startQuiz: (questions: Question[], timeLimit: number | null, name: string, source: 'questions' | 'exams') => void;
+  subjects?: Subject[];
+  questionsBySubject?: Record<string, QuizTest[]>;
 }
 
-const QuestionsPage: React.FC<QuestionsPageProps> = ({ navigateBack, startQuiz }) => {
+const QuestionsPage: React.FC<QuestionsPageProps> = ({ 
+  navigateBack, 
+  startQuiz, 
+  subjects = [], 
+  questionsBySubject = {} 
+}) => {
     const [view, setView] = useState<'subjects' | 'tests'>('subjects');
     const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
-    const [subjects, setSubjects] = useState<Subject[]>([]);
     const [quizTests, setQuizTests] = useState<QuizTest[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const loadSubjects = () => {
-            try {
-                setLoading(true);
-                // localStorage'dan verileri çek
-                const storedSubjects = localStorage.getItem('proSınav_subjects');
-                
-                if (storedSubjects) {
-                    const parsedSubjects: Subject[] = JSON.parse(storedSubjects);
-                    setSubjects(parsedSubjects);
-                } else {
-                    setSubjects([]);
-                }
-            } catch (error) {
-                console.error('Dersler yüklenirken hata:', error);
-                setSubjects([]);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        loadSubjects();
-    }, []);
+    const [loading, setLoading] = useState(false);
 
     const handleSubjectSelect = (subject: Subject) => {
-        try {
-            setLoading(true);
-            setSelectedSubject(subject);
-            
-            // localStorage'dan quiz testlerini yükle
-            const storedQuestions = localStorage.getItem('proSınav_questions');
-            
-            if (storedQuestions) {
-                const questionsBySubject: Record<string, QuizTest[]> = JSON.parse(storedQuestions);
-                const subjectTests = questionsBySubject[subject.id] || [];
-                setQuizTests(subjectTests);
-            } else {
-                setQuizTests([]);
-            }
-            
-            setView('tests');
-        } catch (error) {
-            console.error('Quiz testleri yüklenirken hata:', error);
-        } finally {
-            setLoading(false);
-        }
+        setSelectedSubject(subject);
+        const subjectTests = questionsBySubject[subject.id] || [];
+        setQuizTests(subjectTests);
+        setView('tests');
     };
 
     const handleTestSelect = (test: QuizTest) => {
@@ -79,7 +44,7 @@ const QuestionsPage: React.FC<QuestionsPageProps> = ({ navigateBack, startQuiz }
             navigateBack();
         }
     };
-    
+
     const pageTitle = selectedSubject ? `${selectedSubject.name} Testleri` : 'Soru Çözümü';
     const pageSubtitle = selectedSubject ? 'Çözmek istediğiniz testi seçin.' : 'Bilgilerinizi test etmek için bir ders seçin.';
 
@@ -117,6 +82,11 @@ const QuestionsPage: React.FC<QuestionsPageProps> = ({ navigateBack, startQuiz }
                             <p className="mt-2 text-gray-600 dark:text-gray-400 flex-grow group-hover:text-indigo-100">{subject.description}</p>
                         </div>
                     ))}
+                    {subjects.length === 0 && (
+                        <div className="col-span-full text-center py-8">
+                            <p className="text-gray-500 dark:text-gray-400">Henüz ders eklenmemiş.</p>
+                        </div>
+                    )}
                 </div>
             )}
 
