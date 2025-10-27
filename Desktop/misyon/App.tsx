@@ -24,6 +24,7 @@ type QuizSource = 'questions' | 'exams';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [user, setUser] = useState<User>({ name: 'Aday Memur', email: 'aday@prosinav.com', isAdmin: false });
   const [theme, setTheme] = useState<Theme>(() => {
@@ -37,53 +38,47 @@ const App: React.FC = () => {
   // Supabase auth state'ini kontrol et
   useEffect(() => {
     const checkAuthState = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session?.user) {
-        setIsAuthenticated(true);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
         
-        // Kullanıcı profilini al
-        const { data: profile, error } = await authHelpers.getUserProfile(session.user.id);
-        
-        if (profile) {
-          const userData = {
-            name: `${profile.first_name} ${profile.last_name}`,
-            email: profile.email,
-            isAdmin: profile.is_admin
-          };
-          setUser(userData);
+        if (session?.user) {
+          setIsAuthenticated(true);
           
-          // Admin durumunu local storage'a kaydet (port bağımsız)
-          localStorage.setItem('proSınav_user', JSON.stringify(userData));
-          localStorage.setItem('proSınav_isAdmin', profile.is_admin ? 'true' : 'false');
-        } else {
-          // Profil bulunamazsa varsayılan kullanıcı bilgilerini kullan
-          const userData = {
-            name: session.user.user_metadata?.first_name && session.user.user_metadata?.last_name 
-              ? `${session.user.user_metadata.first_name} ${session.user.user_metadata.last_name}`
-              : 'Kullanıcı',
-            email: session.user.email || 'user@example.com',
-            isAdmin: false
-          };
-          setUser(userData);
-          localStorage.setItem('proSınav_user', JSON.stringify(userData));
-          localStorage.setItem('proSınav_isAdmin', 'false');
-        }
-      } else {
-        // Oturum yoksa local storage'dan kontrol et
-        const savedUser = localStorage.getItem('proSınav_user');
-        const savedIsAdmin = localStorage.getItem('proSınav_isAdmin');
-        
-        if (savedUser && savedIsAdmin) {
-          try {
-            const userData = JSON.parse(savedUser);
-            userData.isAdmin = savedIsAdmin === 'true';
+          // Kullanıcı profilini al
+          const { data: profile, error } = await authHelpers.getUserProfile(session.user.id);
+          
+          if (profile) {
+            const userData = {
+              name: `${profile.first_name} ${profile.last_name}`,
+              email: profile.email,
+              isAdmin: profile.is_admin
+            };
             setUser(userData);
-            // Ama authenticated olarak işaretleme - sadece UI için kullan
-          } catch (error) {
-            console.error('Local storage parse error:', error);
+            
+            // Admin durumunu local storage'a kaydet (port bağımsız)
+            localStorage.setItem('proSınav_user', JSON.stringify(userData));
+            localStorage.setItem('proSınav_isAdmin', profile.is_admin ? 'true' : 'false');
+          } else {
+            // Profil bulunamazsa varsayılan kullanıcı bilgilerini kullan
+            const userData = {
+              name: session.user.user_metadata?.first_name && session.user.user_metadata?.last_name 
+                ? `${session.user.user_metadata.first_name} ${session.user.user_metadata.last_name}`
+                : 'Kullanıcı',
+              email: session.user.email || 'user@example.com',
+              isAdmin: false
+            };
+            setUser(userData);
+            localStorage.setItem('proSınav_user', JSON.stringify(userData));
+            localStorage.setItem('proSınav_isAdmin', 'false');
           }
+        } else {
+          setIsAuthenticated(false);
         }
+      } catch (error) {
+        console.error('Auth state check error:', error);
+        setIsAuthenticated(false);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -93,6 +88,7 @@ const App: React.FC = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         setIsAuthenticated(true);
+        setIsLoading(false);
         
         const { data: profile, error } = await authHelpers.getUserProfile(session.user.id);
         
@@ -122,6 +118,7 @@ const App: React.FC = () => {
         }
       } else if (event === 'SIGNED_OUT') {
         setIsAuthenticated(false);
+        setIsLoading(false);
         setUser({ name: 'Aday Memur', email: 'aday@prosinav.com', isAdmin: false });
         setCurrentPage('home');
         
@@ -293,6 +290,17 @@ const App: React.FC = () => {
         return <HomePage navigateTo={navigateTo} theme={theme} user={user} />;
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Yükleniyor...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     if (currentPage === 'register') {
