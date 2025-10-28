@@ -158,14 +158,25 @@ const App: React.FC = () => {
       try {
         // Subjects yükle
         const subjectsData = await dbHelpers.getSubjects();
-        setSubjects(subjectsData || []);
+        
+        // Eğer Supabase'de veri yoksa fallback verileri kullan
+        if (!subjectsData || subjectsData.length === 0) {
+          console.log('Supabase\'de veri bulunamadı, fallback verileri yükleniyor...');
+          setSubjects(SUBJECTS);
+          setQuestionsBySubject(QUESTIONS_BY_SUBJECT);
+          setExams(MOCK_EXAMS);
+          setFlashcardsBySubject(FLASHCARDS_BY_SUBJECT);
+          return;
+        }
+        
+        setSubjects(subjectsData);
 
         // Questions yükle ve subject'lere göre grupla
         const questionsData = await dbHelpers.getQuestions();
         const groupedQuestions: Record<string, QuizTest[]> = {};
         
-        if (questionsData) {
-          subjectsData?.forEach(subject => {
+        if (questionsData && questionsData.length > 0) {
+          subjectsData.forEach(subject => {
             const subjectQuestions = questionsData.filter(q => q.subject_id === subject.id);
             if (subjectQuestions.length > 0) {
               groupedQuestions[subject.id] = [{
@@ -184,18 +195,28 @@ const App: React.FC = () => {
             }
           });
         }
-        setQuestionsBySubject(groupedQuestions);
+        
+        // Eğer hiç soru yoksa fallback verileri kullan
+        if (Object.keys(groupedQuestions).length === 0) {
+          setQuestionsBySubject(QUESTIONS_BY_SUBJECT);
+        } else {
+          setQuestionsBySubject(groupedQuestions);
+        }
 
         // Mock Exams yükle
         const examsData = await dbHelpers.getMockExams();
-        setExams(examsData || []);
+        if (!examsData || examsData.length === 0) {
+          setExams(MOCK_EXAMS);
+        } else {
+          setExams(examsData);
+        }
 
         // Flashcards yükle ve subject'lere göre grupla
         const flashcardsData = await dbHelpers.getFlashcards();
         const groupedFlashcards: FlashcardsBySubject = {};
         
-        if (flashcardsData) {
-          subjectsData?.forEach(subject => {
+        if (flashcardsData && flashcardsData.length > 0) {
+          subjectsData.forEach(subject => {
             const subjectFlashcards = flashcardsData.filter(f => f.subject_id === subject.id);
             if (subjectFlashcards.length > 0) {
               groupedFlashcards[subject.id] = subjectFlashcards.map(f => ({
@@ -206,7 +227,13 @@ const App: React.FC = () => {
             }
           });
         }
-        setFlashcardsBySubject(groupedFlashcards);
+        
+        // Eğer hiç flashcard yoksa fallback verileri kullan
+        if (Object.keys(groupedFlashcards).length === 0) {
+          setFlashcardsBySubject(FLASHCARDS_BY_SUBJECT);
+        } else {
+          setFlashcardsBySubject(groupedFlashcards);
+        }
 
       } catch (error) {
         console.error('Veri yükleme hatası:', error);
